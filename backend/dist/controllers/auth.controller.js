@@ -8,9 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.signup = void 0;
+exports.login = exports.signup = void 0;
 const auth_models_1 = require("../models/auth.models");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+const JWT_SECRET = process.env.JWT_SECRET;
 const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, password } = req.body;
@@ -30,3 +37,25 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.signup = signup;
+const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, password } = req.body;
+    try {
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password required" });
+        }
+        const user = auth_models_1.authmodel.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        console.log(user);
+        const token = jsonwebtoken_1.default.sign({
+            email
+        }, JWT_SECRET);
+        return res.status(200).json({ message: "Login successful", token });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.login = login;

@@ -11,6 +11,15 @@ const userSchema = new Schema({
     password:{
         type:String,
         required:true
+    },
+    fullname:{
+        type:String,
+        required:true
+    },
+    profilepic:{
+        type:String,
+        default:""
     }
-});
+},{timestamps:true});
+
 export const authmodel = mongoose.model('user',userSchema);

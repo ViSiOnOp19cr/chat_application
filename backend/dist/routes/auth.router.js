@@ -20,7 +20,7 @@ exports.authRoutes.post("/signup", (req, res) => __awaiter(void 0, void 0, void 
     (0, auth_controller_1.signup)(req, res);
 }));
 exports.authRoutes.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    (0, auth_controller_1.signup)(req, res);
+    (0, auth_controller_1.login)(req, res);
 }));
 exports.authRoutes.post("/logout", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     (0, auth_controller_1.signup)(req, res);
