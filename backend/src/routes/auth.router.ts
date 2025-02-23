@@ -1,15 +1,19 @@
 
-import express,{Request,Response} from 'express'
-export const authRoutes = express.Router();
-import {signup,login} from '../controllers/auth.controller'
-authRoutes.post("/signup", async(req, res) => { 
+import express,{Request,Response, RequestHandler} from 'express'
+import {signup,login,updateProfile, checkAuth} from '../controllers/auth.controller';
+import { authmiddleware } from '../middleware/middlewares';
+export const router = express.Router();
+
+router.post("/signup", (req, res) => { 
     signup(req,res);
 });
-authRoutes.post("/login", async(req, res) => {
-    
+router.post("/login", (req, res) => {
     login(req,res);
 });
-authRoutes.post("/logout", async(req, res) => {
-    
-    signup(req,res);
+router.put("/update-profile", authmiddleware as RequestHandler,(req,res)=>{
+    updateProfile(req,res);
+})
+router.get("/check", authmiddleware as RequestHandler,(req,res)=>{
+    checkAuth(req,res);
 });
+

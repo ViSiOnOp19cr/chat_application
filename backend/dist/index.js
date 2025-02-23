@@ -14,13 +14,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_router_1 = require("./routes/auth.router");
+const message_router_1 = require("./routes/message.router");
 const mongoose_1 = __importDefault(require("mongoose"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+app.use((0, cors_1.default)());
 const mongodb = process.env.MONGODB_URL;
-app.use("/api/v1", auth_router_1.authRoutes);
+app.use("/api/v1", auth_router_1.router);
+app.use("/api/v1", message_router_1.message);
 app.listen(3000, () => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Server is running on port 3000");
     yield mongoose_1.default.connect(mongodb);

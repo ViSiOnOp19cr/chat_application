@@ -12,14 +12,14 @@ const userSchema = new Schema({
         type:String,
         required:true
     },
-    fullname:{
+    fullName:{
         type:String,
         required:true
     },
-    profilepic:{
+    profilePic:{
         type:String,
         default:""
     }
 },{timestamps:true});
 
-export const authmodel = mongoose.model('user',userSchema);
+export const authmodel = mongoose.model('User',userSchema);
