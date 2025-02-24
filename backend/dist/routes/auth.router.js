@@ -20,3 +20,6 @@ exports.router.put("/update-profile", middlewares_1.authmiddleware, (req, res) =
 exports.router.get("/check", middlewares_1.authmiddleware, (req, res) => {
     (0, auth_controller_1.checkAuth)(req, res);
 });
+exports.router.get("/profile", middlewares_1.authmiddleware, (req, res) => {
+    (0, auth_controller_1.getProfile)(req, res);
+});

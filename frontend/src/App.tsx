@@ -1,20 +1,31 @@
 import './App.css'
-import { BrowserRouter, Routes, Route,Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Signup } from './pages/signup';
 import { Login } from './pages/login';
 import { Home } from './pages/Home';
-function App() {
-  const token = localStorage.getItem('token');
+import { Profile } from './pages/profile';
 
+
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  return <>{children}</>;
+};
+
+function App() {
   return (
     <div className="h-screen bg-black">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={token ? <Home/> : <Navigate to="/login" />} />
-          <Route path="/login" element={<Login/>} />
-          <Route path="/signup" element={<Signup/>} />
-          <Route path="/profile" element={<div>Profile</div>} />
-          <Route path="/setting" element={<div>Setting</div>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          
+          {/* Protected Routes */}
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </div>

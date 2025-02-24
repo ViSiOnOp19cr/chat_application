@@ -13,6 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const http_1 = require("http");
+const socket_io_1 = require("socket.io");
 const auth_router_1 = require("./routes/auth.router");
 const message_router_1 = require("./routes/message.router");
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -20,13 +22,64 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+const httpServer = (0, http_1.createServer)(app);
+const io = new socket_io_1.Server(httpServer, {
+    cors: {
+        origin: "http://localhost:5173",
+        credentials: true
+    }
+});
 app.use(express_1.default.json());
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: "http://localhost:5173",
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Add supported methods
+    allowedHeaders: ['Content-Type', 'Authorization'] // Add allowed headers
+}));
+app.set('io', io);
 const mongodb = process.env.MONGODB_URL;
 app.use("/api/v1", auth_router_1.router);
 app.use("/api/v1", message_router_1.message);
-app.listen(3000, () => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("Server is running on port 3000");
-    yield mongoose_1.default.connect(mongodb);
-    console.log("connected to database successfully");
+// Move onlineUsers to app.locals for global access
+app.locals.onlineUsers = {};
+io.on('connection', (socket) => {
+    console.log('New client connected:', socket.id);
+    socket.on('addUser', (userId) => {
+        app.locals.onlineUsers[userId] = socket.id;
+        io.emit('getOnlineUsers', Object.keys(app.locals.onlineUsers));
+        console.log('Online Users:', app.locals.onlineUsers);
+    });
+    socket.on('sendMessage', (data) => {
+        const receiverSocketId = app.locals.onlineUsers[data.receiverId];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('getMessage', data);
+        }
+    });
+    socket.on('typing', (data) => {
+        const receiverSocketId = app.locals.onlineUsers[data.receiverId];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('userTyping', data.senderId);
+        }
+    });
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+        for (const [userId, socketId] of Object.entries(app.locals.onlineUsers)) {
+            if (socketId === socket.id) {
+                delete app.locals.onlineUsers[userId];
+                break;
+            }
+        }
+        io.emit('getOnlineUsers', Object.keys(app.locals.onlineUsers));
+    });
+});
+const PORT = process.env.PORT || 3000;
+httpServer.listen(PORT, () => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("Server is running on port " + PORT);
+    try {
+        yield mongoose_1.default.connect(mongodb);
+        console.log("Connected to database successfully");
+    }
+    catch (error) {
+        console.error("Database connection failed:", error);
+    }
 }));

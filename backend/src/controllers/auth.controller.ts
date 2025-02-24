@@ -56,7 +56,7 @@ export const login = async (req: Request, res: Response) => {
         const token = jwt.sign({
             id: user._id
         }, JWT_SECRET);
-        return res.status(200).json({ message: "Login successful", token })
+        return res.status(200).json({ message: "Login successful", token, userId: user._id });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: "Internal server error" });
@@ -89,5 +89,20 @@ export const checkAuth = (req:Request,res:Response)=>{
     }catch(err){
         console.log(err);
         return res.status(500).json({message:"Internal server error"});
+    }
+}
+export const getProfile = async(req: CustomRequest, res: Response) => {
+    try {
+        const userId = req.userId;
+        const user = await authmodel.findById(userId).select('-password'); // Exclude password from response
+        
+        if(!user) {
+            return res.status(404).json({message: "User not found"});
+        }
+
+        return res.status(200).json({user});
+    } catch(err) {
+        console.log(err);
+        return res.status(500).json({message: "Internal server error"});
     }
 }

@@ -32,19 +32,17 @@ const getMessages = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const { id: chaterId } = req.params;
         const myId = req.userId;
-        const messages = message_models_1.Messages.find({
+        const messages = yield message_models_1.Messages.find({
             $or: [
-                {
-                    senderId: chaterId, receiverId: myId
-                },
-                { senderId: chaterId, receiverId: myId }
+                { senderId: chaterId, receiverId: myId },
+                { senderId: myId, receiverId: chaterId }
             ]
-        });
+        }).sort({ createdAt: 1 });
         res.status(200).json(messages);
     }
     catch (err) {
         console.log(err);
-        res.status(400).json({ message: "internal server error" });
+        res.status(500).json({ message: "Internal server error" });
     }
 });
 exports.getMessages = getMessages;
@@ -53,23 +51,41 @@ const sendingMessage = (req, res) => __awaiter(void 0, void 0, void 0, function*
         const senderId = req.userId;
         const { id: receiverId } = req.params;
         const { text, image } = req.body;
+        if (!senderId || !receiverId) {
+            return res.status(400).json({ message: "Sender and receiver are required" });
+        }
         let imageurl;
         if (image) {
-            const uploadResponse = yield cloudinary_1.default.uploader.upload(image);
-            imageurl = uploadResponse.secure_url;
+            try {
+                const uploadResponse = yield cloudinary_1.default.uploader.upload(image);
+                imageurl = uploadResponse.secure_url;
+            }
+            catch (error) {
+                console.error('Image upload failed:', error);
+                return res.status(400).json({ message: "Image upload failed" });
+            }
         }
-        const updateMessage = yield message_models_1.Messages.create({
+        const newMessage = yield message_models_1.Messages.create({
             senderId,
             receiverId,
             text,
-            image: imageurl
+            image: imageurl,
+            createdAt: new Date()
         });
-        if (!updateMessage) {
-            res.status(400).json({ messsage: "invalid filed" });
+        if (!newMessage) {
+            return res.status(400).json({ message: "Failed to create message" });
         }
-        res.status(200).json(updateMessage);
+        const io = req.app.get('io');
+        const onlineUsers = req.app.locals.onlineUsers;
+        if (onlineUsers && onlineUsers[receiverId]) {
+            io.to(onlineUsers[receiverId]).emit('getMessage', newMessage);
+        }
+        console.log(newMessage);
+        res.status(201).json(newMessage);
     }
     catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Internal server error" });
     }
 });
 exports.sendingMessage = sendingMessage;

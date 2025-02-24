@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkAuth = exports.updateProfile = exports.login = exports.signup = void 0;
+exports.getProfile = exports.checkAuth = exports.updateProfile = exports.login = exports.signup = void 0;
 const auth_models_1 = require("../models/auth.models");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -32,7 +32,7 @@ const signup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         const hashedpassword = yield bcrypt_1.default.hash(password, 10);
         const user = new auth_models_1.authmodel({
-            email,
+            email: email.toLowerCase(),
             password: hashedpassword,
             fullName
         });
@@ -62,7 +62,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const token = jsonwebtoken_1.default.sign({
             id: user._id
         }, JWT_SECRET);
-        return res.status(200).json({ message: "Login successful", token });
+        return res.status(200).json({ message: "Login successful", token, userId: user._id });
     }
     catch (err) {
         console.log(err);
@@ -73,7 +73,7 @@ exports.login = login;
 const updateProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { profilePic } = req.body;
-        const userId = req.body._id;
+        const userId = req.userId;
         if (!profilePic) {
             return res.status(400).json({ message: "Profile picture required" });
         }
@@ -102,3 +102,18 @@ const checkAuth = (req, res) => {
     }
 };
 exports.checkAuth = checkAuth;
+const getProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.userId;
+        const user = yield auth_models_1.authmodel.findById(userId).select('-password'); // Exclude password from response
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        return res.status(200).json({ user });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.getProfile = getProfile;
