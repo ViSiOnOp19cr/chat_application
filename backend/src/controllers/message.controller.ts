@@ -2,9 +2,12 @@ import { authmodel } from "../models/auth.models";
 import { Messages } from "../models/message.models";
 import { Request, Response } from "express";
 import cloudinary from "../lib/cloudinary";
+
 interface CustomRequest extends Request {
     userId?: string;
+   
 }
+
 export const getUsersForSidebar = async (req: CustomRequest, res: Response) => {
     try {
         const loggedInUserId = req.userId as string;
@@ -15,22 +18,30 @@ export const getUsersForSidebar = async (req: CustomRequest, res: Response) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 }
+
 export const getMessages = async (req: CustomRequest, res: Response) => {
     try {
         const { id: chaterId } = req.params;
         const myId = req.userId;
+        
+        if (!chaterId || !myId) {
+            return res.status(400).json({ message: "Invalid request parameters" });
+        }
+
         const messages = await Messages.find({
             $or: [
                 { senderId: chaterId, receiverId: myId },
                 { senderId: myId, receiverId: chaterId }
             ]
         }).sort({ createdAt: 1 });
+        
         res.status(200).json(messages);
     } catch (err) {
         console.log(err);
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
 export const sendingMessage = async(req: CustomRequest, res: Response) => {
     try {
         const senderId = req.userId;
@@ -52,6 +63,7 @@ export const sendingMessage = async(req: CustomRequest, res: Response) => {
             }
         }
 
+        // Create the new message
         const newMessage = await Messages.create({
             senderId,
             receiverId,
@@ -64,13 +76,12 @@ export const sendingMessage = async(req: CustomRequest, res: Response) => {
             return res.status(400).json({message: "Failed to create message"});
         }
 
+
         const io = req.app.get('io');
         const onlineUsers = req.app.locals.onlineUsers;
+
         
-        if (onlineUsers && onlineUsers[receiverId]) {
-            io.to(onlineUsers[receiverId]).emit('getMessage', newMessage);
-        }
-        console.log(newMessage);
+        console.log('New message created:', newMessage._id);
         res.status(201).json(newMessage);
     } catch(err) {
         console.error(err);

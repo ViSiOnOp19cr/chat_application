@@ -32,6 +32,9 @@ const getMessages = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const { id: chaterId } = req.params;
         const myId = req.userId;
+        if (!chaterId || !myId) {
+            return res.status(400).json({ message: "Invalid request parameters" });
+        }
         const messages = yield message_models_1.Messages.find({
             $or: [
                 { senderId: chaterId, receiverId: myId },
@@ -65,6 +68,7 @@ const sendingMessage = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 return res.status(400).json({ message: "Image upload failed" });
             }
         }
+        // Create the new message
         const newMessage = yield message_models_1.Messages.create({
             senderId,
             receiverId,
@@ -77,10 +81,7 @@ const sendingMessage = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         const io = req.app.get('io');
         const onlineUsers = req.app.locals.onlineUsers;
-        if (onlineUsers && onlineUsers[receiverId]) {
-            io.to(onlineUsers[receiverId]).emit('getMessage', newMessage);
-        }
-        console.log(newMessage);
+        console.log('New message created:', newMessage._id);
         res.status(201).json(newMessage);
     }
     catch (err) {
