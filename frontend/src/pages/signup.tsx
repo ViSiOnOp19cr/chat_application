@@ -20,8 +20,6 @@ export const Signup = () => {
       const fullName = fullNameRef.current?.value;
       const email = emailRef.current?.value;
       const password = passwordRef.current?.value;
-
-      // Validation
       if (!fullName || !email || !password) {
         setError("Please fill in all fields");
         setLoading(false);
@@ -39,7 +37,6 @@ export const Signup = () => {
         setLoading(false);
         return;
       }
-
       await axios.post(`${BACKEND_URL}/signup`, {
         fullName,
         email,
