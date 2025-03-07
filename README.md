@@ -28,10 +28,5 @@ A modern real-time chat application built with React, TypeScript, Node.js, and S
 - JWT Authentication
 - Cloudinary (for image storage)
 
-## Getting Started
 
-### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB
-- npm or yarn
 
