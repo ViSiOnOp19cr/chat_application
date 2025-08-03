@@ -9,6 +9,7 @@ A modern real-time chat application built with React, TypeScript, Node.js, and S
 - 🟢 Online status indicators
 - 🌙 Dark mode interface
 - 📱 Responsive design
+- Redis pub/sub
 
 ## Tech Stack
 

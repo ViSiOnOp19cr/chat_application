@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/dotenv": "^6.1.1",
@@ -10,6 +11,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.1",
     "socket.io": "^4.8.1",

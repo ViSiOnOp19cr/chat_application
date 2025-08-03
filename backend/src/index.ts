@@ -6,6 +6,10 @@ import { message } from './routes/message.router';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import Redis from 'ioredis';
+import { createAdapter } from "@socket.io/redis-adapter"; 
+
+
 dotenv.config();
 
 const app = express();
@@ -17,6 +21,8 @@ const io = new Server(httpServer, {
     }
 });
 
+const pub = new Redis();
+const sub = new Redis();
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -29,64 +35,50 @@ app.use(cors({
 }));
 app.set('io', io);
 
+io.adapter(createAdapter(pub,sub));
+
 const mongodb = process.env.MONGODB_URL;
 
 app.use("/api/v1", router);
 app.use("/api/v1", message);
 
-app.locals.onlineUsers = {};
+
 
 io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
-    const deliveredMessages = new Set();
 
-    socket.on('addUser', (userId) => {
+    socket.on('addUser', async (userId) => {
         if (userId) {
-            app.locals.onlineUsers[userId] = socket.id;
-            io.emit('getOnlineUsers', Object.keys(app.locals.onlineUsers));
-            console.log('Online Users:', app.locals.onlineUsers);
+            await pub.hset("online_users", userId, socket.id);
+            const users = await pub.hkeys("online_users");
+            io.emit("getonlineusers", users);
         }
+
     });
 
-    socket.on('sendMessage', (data) => {
-        const { receiverId } = data;
+    socket.on('sendMessage', async (data) => {
+        const receiverId = data.receiverId;
         if (!receiverId) return;
-
-        const receiverSocketId = app.locals.onlineUsers[receiverId];
-        
-        if (receiverSocketId) {
-            const messageKey = `${data._id}-${receiverSocketId}`;
-            if (!deliveredMessages.has(messageKey)) {
-                deliveredMessages.add(messageKey);
-                io.to(receiverSocketId).emit('getMessage', data);
-            }
+        const receiversocketId = await pub.hget("online_users", receiverId);
+        if (receiversocketId) {
+            io.to(receiversocketId).emit('getMessage', data.message);
         }
     });
 
-    socket.on('typing', (data) => {
-        const { receiverId } = data;
-        if (!receiverId) return;
 
-        const receiverSocketId = app.locals.onlineUsers[receiverId];
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit('userTyping', data.senderId);
-        }
-    });
+    socket.on('disconnect', async () => {
+        const onlineUsers = await pub.hgetall("online_users");
 
-    socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
-        
-        let userIdToRemove = null;
-        for (const [userId, socketId] of Object.entries(app.locals.onlineUsers)) {
-            if (socketId === socket.id) {
-                userIdToRemove = userId;
-                break;
-            }
+        const userId = Object.keys(onlineUsers).find(
+            key => onlineUsers[key] === socket.id
+        );
+
+        if (userId) {
+            await pub.hdel("online_users", userId);
+            const users = await pub.hkeys("online_users");
+            io.emit("getonlineusers", users);
         }
-        if (userIdToRemove) {
-            delete app.locals.onlineUsers[userIdToRemove];
-            io.emit('getOnlineUsers', Object.keys(app.locals.onlineUsers));
-        }
+        console.log("Disconnected:", socket.id);
     });
 });
 

@@ -89,11 +89,9 @@ export const Home = () => {
     });
   }, []);
 
-  // Set up socket event listeners
   useEffect(() => {
     if (!socket) return;
 
-    // Handle incoming messages
     const handleGetMessage = (message: Message) => {
       console.log("Received message via socket:", message);
       if (
@@ -105,27 +103,26 @@ export const Home = () => {
       }
     };
 
-    // Handle online users update
     const handleGetOnlineUsers = (users: string[]) => {
       setOnlineUsers(users);
     };
 
-    // Register event listeners
+
     socket.on("getMessage", handleGetMessage);
     socket.on("getOnlineUsers", handleGetOnlineUsers);
 
-    // Add user to online users list
+
     const userId = localStorage.getItem("userId");
     if (userId) socket.emit("addUser", userId);
 
-    // Cleanup event listeners when component unmounts or dependencies change
+
     return () => {
       socket.off("getMessage", handleGetMessage);
       socket.off("getOnlineUsers", handleGetOnlineUsers);
     };
   }, [socket, selectedUser, addMessageWithoutDuplicates]);
 
-  // Fetch users on component mount
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -172,11 +169,9 @@ export const Home = () => {
       );
 
       if (response.status === 201 && response.data) {
-        // Add message to local state
         addMessageWithoutDuplicates(response.data);
         setNewMessage("");
 
-        // Emit the message through socket.io if connected
         if (socket && socket.connected) {
           socket.emit("sendMessage", {
             senderId: localStorage.getItem("userId"),
